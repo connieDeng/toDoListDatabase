@@ -20,7 +20,7 @@ app.set("view engine", "handlebars");
 // routes ======================================================================
 require('./routes.js')(app);
 
-const port = 3000;
+const port = proocess.env.PORT || 3000;
 app.listen(port, () => `Server running on port ${port}`);
 
 module.exports = router;
