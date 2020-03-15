@@ -74,7 +74,7 @@ module.exports =  (app) => {
             const token = (await axios.post(TODO_API_URL + '/auth',
                 { username : targetUsername })).data.token;
             
-            res.cookie('authToken', token);
+                res.cookie('authToken', token);
             
                 try{
                 const toDoList = (await axios.get(TODO_API_URL + '/todo-item',
