@@ -7,19 +7,17 @@ module.exports = {
     //key is qwe1234
       jwt.verify(token, "qwe1234", (err, decoded) => {
         if (err) {
-          return res.json({
-            success: 0,
-            message: "Invalid Token..."
-          });
+              res.render('login-page', {
+                message: 'You are unauthorized, please sign in again.',
+              });
         } else {
           req.decoded = decoded;
           next();
         }
       });
     } else {
-      return res.json({
-        success: 0,
-        message: "Access Denied! Unauthorized User"
+      res.render('login-page', {
+        message: 'You are unauthorized, please sign in again.',
       });
     }
   }
