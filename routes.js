@@ -5,6 +5,7 @@ const db = require('./connection');
 const { checkToken } = require("./token_validation");
 const { sign } = require("jsonwebtoken");
 
+require('dotenv').config;
 const TODO_API_URL = "https://hunter-todo-api.herokuapp.com";
 var loggedinUser = [];
 
@@ -90,7 +91,7 @@ module.exports =  (app) => {
     });
 
     //add new task
-    app.post('/addNewTask', async (req, res) => {
+    app.post('/addNewTask', checkToken, (req, res) => {
         const newTask = req.body.inputNewTask;
         db.query('INSERT INTO Tasks (content, deleted, completed, user_id) ' +
         'VALUES (\'' + newTask + '\' , 0, 0, ' + loggedinUser[0][1] + ' )', (err, rows, fields) => {});
