@@ -8,6 +8,8 @@ const bodyParser = require('body-parser');
 const app = express();
 const router = express.Router();
 const path = require('path');
+const mysql = require('mysql');
+const db = require('./connection');
 
 // configuration ===============================================================
 app.use(express.urlencoded({ extended: false }));
@@ -16,6 +18,7 @@ app.use(express.static(path.join(__dirname,'/public')));
 
 app.engine("handlebars", exphbs());
 app.set("view engine", "handlebars");
+
 
 // routes ======================================================================
 require('./routes.js')(app);

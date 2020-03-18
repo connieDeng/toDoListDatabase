@@ -1,7 +1,9 @@
 const util = require('util');
 const axios = require("axios");
-const jwt = require('jsonwebtoken');
 const cookieParser = require('cookie-parser');
+const db = require('./connection');
+const { checkToken } = require("./token_validation");
+const { sign } = require("jsonwebtoken");
 
 const TODO_API_URL = "https://hunter-todo-api.herokuapp.com";
 var loggedinUser = [];
@@ -29,27 +31,21 @@ module.exports =  (app) => {
         const newTargetUsername = req.body.inputNewUsername;
         console.log(newTargetUsername);
 
-        const allUsers = (await axios.get(TODO_API_URL + '/user')).data;
-       
-        newMap = new Map();
-        newMap = mapUsers(allUsers);
-
-        //if username doesn't exist
-        if(newMap.get(newTargetUsername) == undefined){
-            await axios.post(TODO_API_URL + '/user',
-                { username : newTargetUsername } );
-            
+        db.query('SELECT * FROM Users WHERE username = ?', newTargetUsername, (err, rows, fields) => {
+            //if user doesnt exist
+            if (rows.length){
+                res.render('sign-up', {
+                    message: 'User ' + newTargetUsername + ' already exists, try another username.',
+                    //messageClass: 'alert-danger'
+                });
+            } else {
+                db.query('INSERT INTO Users (username) VALUES ( \'' + newTargetUsername + '\' )', (err, rows, fields) => {});
                 res.render('login-page', {
-                message: 'User ' + newTargetUsername + ' successfully created. Login!',
-                //messageClass: 'alert-danger'
-            });
-        } else {
-            res.render('sign-up', {
-                message: 'User ' + newTargetUsername + ' already exists, try another username.',
-                //messageClass: 'alert-danger'
-            });
-        }
-		
+                    message: 'User ' + newTargetUsername + ' successfully created. Login!',
+                })
+
+            }
+        })
     });
 
     //login page
@@ -57,97 +53,78 @@ module.exports =  (app) => {
 		res.render('login-page');
     });
 
+    //get all users
+    app.get('/users', (req, res) => {
+        db.query('SELECT * FROM Users', (err, rows, fields) => {
+            res.send(rows);
+        })
+    });
+
     //login
-    app.post('/login', async (req, res) => {
+    app.post('/login', (req, res, next) => {
         const targetUsername = req.body.inputUsername;
         //console.log(targetUsername);
 
-        const allUsers = (await axios.get(TODO_API_URL + '/user')).data;
-        //console.log(allUsers);
-       
-        newMap = new Map();
-        newMap = mapUsers(allUsers);
+        //const allUsers = (await 
+            db.query('SELECT * FROM Users WHERE username = ?', targetUsername, (err, rows, fields) => {
+                //if user doesnt exist
+                if (!rows.length){
+                    res.render('login-page', {
+                        message: 'Invalid username or password',
+                        //messageClass: 'alert-danger'
+                        });
+                } else {
+                    loggedinUser.push([targetUsername, rows[0].id]);
+                    
+                    const jsontoken = sign({ token: rows[0].id }, "qwe1234"); //key is qwe1234
+                    console.log(jsontoken);
+                    db.query('SELECT * FROM Tasks WHERE user_id = ?', rows[0].id, (terr, trows, tfields) => {
+                        var taskObj = JSON.parse(JSON.stringify(trows));
+                        //console.log(taskObj);
+                        res.cookie('authToken', jsontoken);
+                        res.render("home", { username: targetUsername, content : taskObj });
+                    })
 
-        if(newMap.get(targetUsername) !== undefined){
-            loggedinUser.push(targetUsername);
-
-            const token = (await axios.post(TODO_API_URL + '/auth',
-                { username : targetUsername })).data.token;
-            
-                res.cookie('authToken', token);
-            
-                try{
-                const toDoList = (await axios.get(TODO_API_URL + '/todo-item',
-                    { headers : { 'Authorization' : token }})).data;
-                
-                res.render("home", { username: targetUsername, content : toDoList });
-            }catch(error){
-                //loggedinUser.push(targetUsername);
-                res.cookie('authToken', token);
-                res.render("home", { username: targetUsername});
-            }
-        } else {
-            res.render('login-page', {
-                message: 'Invalid username or password',
-                //messageClass: 'alert-danger'
-            });
-        }
+                }
+            })
     });
 
     //add new task
     app.post('/addNewTask', async (req, res) => {
-        const token = req.cookies.authToken;
         const newTask = req.body.inputNewTask;
+        db.query('INSERT INTO Tasks (content, deleted, completed, user_id) ' +
+        'VALUES (\'' + newTask + '\' , 0, 0, ' + loggedinUser[0][1] + ' )', (err, rows, fields) => {});
 
-        await axios.post(TODO_API_URL + '/todo-item',
-            { content : newTask } , { headers : { 'Authorization' : token }});
-
-        const toDoList = (await axios.get(TODO_API_URL + '/todo-item', { headers : { 'Authorization' : token }})).data;
-        //console.log(toDoList);
-
-        res.render("home", { username: loggedinUser, content : toDoList });
+        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+            var taskObj = JSON.parse(JSON.stringify(trows));
+            //console.log(taskObj);
+            res.render("home", { username: loggedinUser[0][0], content : taskObj });
+        })
     });
 
     //delete task
-    app.post('/deleteTask', async (req, res) => {
-        const token = req.cookies.authToken;
+    app.post('/deleteTask', checkToken, (req, res) => {
         const taskID = req.body.taskID;
+       
+        db.query('UPDATE Tasks SET deleted = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
 
-        //console.log(loggedinUser);
-        
-        try{
-            await axios.delete(TODO_API_URL + '/todo-item/' + taskID,
-                { headers : { 'Authorization' : token }});
-        } catch (err){
-            console.log(err);
-        }
-
-        const toDoList = (await axios.get(TODO_API_URL + '/todo-item',
-            { headers : { 'Authorization' : token }})).data;
-
-        //console.log(toDoList);
-
-        res.render("home", { username: loggedinUser, content: toDoList } );
-        
-        //res.render("home", { username: loggedinUser, content: data } )
-
+        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+            var taskObj = JSON.parse(JSON.stringify(trows));
+            //console.log(taskObj);
+            res.render("home", { username: loggedinUser[0][0], content : taskObj });
+        })
     });
 
-    app.post('/complete', async (req, res) => {
-        const token = req.cookies.authToken;
+    app.post('/complete', checkToken, (req, res) => {
         const taskID = req.body.taskID;
 
-        try{
-            await axios.put(TODO_API_URL + '/todo-item/'+ taskID,
-                { completed : true } , { headers : { 'Authorization' : token }});
-        } catch (err){
-            console.log(err);
-        }
+        db.query('UPDATE Tasks SET completed = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
 
-        const toDoList = (await axios.get(TODO_API_URL + '/todo-item',
-            { headers : { 'Authorization' : token }})).data;
-
-        res.render("home", { username: loggedinUser, content: toDoList } );
+        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+            var taskObj = JSON.parse(JSON.stringify(trows));
+            //console.log(taskObj);
+            res.render("home", { username: loggedinUser[0][0], content : taskObj });
+        })
     });
 
     //logout
