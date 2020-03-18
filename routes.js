@@ -32,7 +32,7 @@ module.exports =  (app) => {
         const newTargetUsername = req.body.inputNewUsername;
         console.log(newTargetUsername);
 
-        db.query('SELECT * FROM Users WHERE username = ?', newTargetUsername, (err, rows, fields) => {
+        db.query('SELECT * FROM users WHERE username = ?', newTargetUsername, (err, rows, fields) => {
             //if user doesnt exist
             if (rows.length){
                 res.render('sign-up', {
@@ -40,7 +40,7 @@ module.exports =  (app) => {
                     //messageClass: 'alert-danger'
                 });
             } else {
-                db.query('INSERT INTO Users (username) VALUES ( \'' + newTargetUsername + '\' )', (err, rows, fields) => {});
+                db.query('INSERT INTO users (username) VALUES ( \'' + newTargetUsername + '\' )', (err, rows, fields) => {});
                 res.render('login-page', {
                     message: 'User ' + newTargetUsername + ' successfully created. Login!',
                 })
@@ -56,7 +56,7 @@ module.exports =  (app) => {
 
     //get all users
     app.get('/users', (req, res) => {
-        db.query('SELECT * FROM Users', (err, rows, fields) => {
+        db.query('SELECT * FROM users', (err, rows, fields) => {
             res.send(rows);
         })
     });
@@ -67,7 +67,7 @@ module.exports =  (app) => {
         //console.log(targetUsername);
 
         //const allUsers = (await 
-            db.query('SELECT * FROM Users WHERE username = ?', targetUsername, (err, rows, fields) => {
+            db.query('SELECT * FROM users WHERE username = ?', targetUsername, (err, rows, fields) => {
                 //if user doesnt exist
                 if (!rows.length){
                     res.render('login-page', {
@@ -79,7 +79,7 @@ module.exports =  (app) => {
                     
                     const jsontoken = sign({ token: rows[0].id }, "qwe1234"); //key is qwe1234
                     console.log(jsontoken);
-                    db.query('SELECT * FROM Tasks WHERE user_id = ?', rows[0].id, (terr, trows, tfields) => {
+                    db.query('SELECT * FROM tasks WHERE user_id = ?', rows[0].id, (terr, trows, tfields) => {
                         var taskObj = JSON.parse(JSON.stringify(trows));
                         //console.log(taskObj);
                         res.cookie('authToken', jsontoken);
@@ -93,10 +93,10 @@ module.exports =  (app) => {
     //add new task
     app.post('/addNewTask', checkToken, (req, res) => {
         const newTask = req.body.inputNewTask;
-        db.query('INSERT INTO Tasks (content, deleted, completed, user_id) ' +
+        db.query('INSERT INTO tasks (content, deleted, completed, user_id) ' +
         'VALUES (\'' + newTask + '\' , 0, 0, ' + loggedinUser[0][1] + ' )', (err, rows, fields) => {});
 
-        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+        db.query('SELECT * FROM tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
             var taskObj = JSON.parse(JSON.stringify(trows));
             //console.log(taskObj);
             res.render("home", { username: loggedinUser[0][0], content : taskObj });
@@ -107,9 +107,9 @@ module.exports =  (app) => {
     app.post('/deleteTask', checkToken, (req, res) => {
         const taskID = req.body.taskID;
        
-        db.query('UPDATE Tasks SET deleted = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
+        db.query('UPDATE tasks SET deleted = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
 
-        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+        db.query('SELECT * FROM tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
             var taskObj = JSON.parse(JSON.stringify(trows));
             //console.log(taskObj);
             res.render("home", { username: loggedinUser[0][0], content : taskObj });
@@ -119,9 +119,9 @@ module.exports =  (app) => {
     app.post('/complete', checkToken, (req, res) => {
         const taskID = req.body.taskID;
 
-        db.query('UPDATE Tasks SET completed = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
+        db.query('UPDATE tasks SET completed = 1 WHERE id = ?', taskID, (err, rows, fields) => {})
 
-        db.query('SELECT * FROM Tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
+        db.query('SELECT * FROM tasks WHERE user_id = ?', loggedinUser[0][1], (terr, trows, tfields) => {
             var taskObj = JSON.parse(JSON.stringify(trows));
             //console.log(taskObj);
             res.render("home", { username: loggedinUser[0][0], content : taskObj });

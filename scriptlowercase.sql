@@ -1,1 +1,0 @@
-INSERT INTO tododb.Tasks (content, deleted, completed, user_id) VALUES ('BISS', 0, 0, 2);
