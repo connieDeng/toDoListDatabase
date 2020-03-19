@@ -6,7 +6,6 @@ const exphbs = require("express-handlebars");
 const axios = require("axios");
 const bodyParser = require('body-parser');
 const app = express();
-const router = express.Router();
 const path = require('path');
 const mysql = require('mysql');
 const db = require('./connection');
@@ -25,5 +24,3 @@ require('./routes.js')(app);
 
 const port = process.env.PORT || 3000;
 app.listen(port, () => console.log(`Server running on port ${port}`));
-
-module.exports = router;

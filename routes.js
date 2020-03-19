@@ -68,7 +68,6 @@ module.exports =  (app) => {
 
         //const allUsers = (await 
             db.query('SELECT * FROM users WHERE username = ?', targetUsername, (err, rows, fields) => {
-                console.log(rows);
                 //if user doesnt exist
                 if (!rows.length){
                     res.render('login-page', {
