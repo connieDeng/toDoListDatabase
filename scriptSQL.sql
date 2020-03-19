@@ -1,1 +1,1 @@
-CREATE DATABASE `tododb` /*!40100 DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_0900_ai_ci */ /*!80016 DEFAULT ENCRYPTION='N' */;
+CREATE USER 'b6034fb423fe74'@'us-cdbr-iron-east-04.cleardb.net' IDENTIFIED BY 'c30bf13a';

@@ -23,7 +23,7 @@ app.set("view engine", "handlebars");
 // routes ======================================================================
 require('./routes.js')(app);
 
-const port = process.env.PORT || 5000;
-app.listen(port, () => `Server running on port ${port}`);
+const port = process.env.PORT || 3000;
+app.listen(port, () => console.log(`Server running on port ${port}`));
 
 module.exports = router;
